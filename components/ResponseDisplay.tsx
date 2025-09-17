@@ -1,5 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
+import { marked } from 'marked';
+
+// Configure marked once when the module is loaded for efficiency
+marked.setOptions({
+    gfm: true, // Use GitHub Flavored Markdown for better compatibility
+    breaks: true, // Render line breaks as <br> tags
+    mangle: false,
+    headerIds: false,
+});
 
 interface ResponseDisplayProps {
   response: string;
@@ -22,6 +30,7 @@ export const ResponseDisplay: React.FC<ResponseDisplayProps> = ({ response }) =>
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
+    // Copy the raw markdown text, not the rendered HTML
     navigator.clipboard.writeText(response);
     setCopied(true);
   };
@@ -33,6 +42,9 @@ export const ResponseDisplay: React.FC<ResponseDisplayProps> = ({ response }) =>
     }
   }, [copied]);
 
+  // Parse the markdown response into an HTML string
+  const parsedHtml = marked.parse(response) as string;
+
   return (
     <div className="w-full bg-gray-800 border border-gray-700 rounded-lg p-6 relative shadow-lg animate-fade-in">
       <button 
@@ -43,9 +55,10 @@ export const ResponseDisplay: React.FC<ResponseDisplayProps> = ({ response }) =>
         {copied ? <CheckIcon className="w-5 h-5 text-green-400" /> : <ClipboardIcon className="w-5 h-5" />}
       </button>
       <h2 className="text-xl font-bold mb-4 text-purple-400">Generated Response</h2>
-      <div className="prose prose-invert max-w-none text-gray-300 whitespace-pre-wrap">
-        {response}
-      </div>
+      <div 
+        className="prose prose-invert max-w-none text-gray-300"
+        dangerouslySetInnerHTML={{ __html: parsedHtml }}
+      />
     </div>
   );
 };
