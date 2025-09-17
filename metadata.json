@@ -1,0 +1,5 @@
+{
+  "name": "Gemini Prompt Engine",
+  "description": "A sleek and modern web application that leverages the Gemini API for powerful text-to-text generation. Enter any custom prompt and receive an AI-generated response.",
+  "requestFramePermissions": []
+}
