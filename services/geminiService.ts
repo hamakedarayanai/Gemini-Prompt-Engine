@@ -1,7 +1,11 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-export const generateText = async (prompt: string, systemInstruction?: string): Promise<string> => {
+export const generateTextStream = async (
+  prompt: string,
+  onStream: (chunk: string) => void,
+  systemInstruction?: string
+): Promise<void> => {
   if (!process.env.API_KEY) {
     throw new Error("API_KEY environment variable not set.");
   }
@@ -9,7 +13,7 @@ export const generateText = async (prompt: string, systemInstruction?: string): 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
-    const response = await ai.models.generateContent({
+    const responseStream = await ai.models.generateContentStream({
       model: 'gemini-2.5-flash',
       contents: prompt,
       ...(systemInstruction && systemInstruction.trim() !== '' && {
@@ -19,13 +23,22 @@ export const generateText = async (prompt: string, systemInstruction?: string): 
       }),
     });
     
-    return response.text;
+    for await (const chunk of responseStream) {
+      onStream(chunk.text);
+    }
 
   } catch (error) {
     console.error("Gemini API Error:", error);
+    let errorMessage = "An unexpected error occurred while calling the Gemini API. Please check the console for more details.";
     if (error instanceof Error) {
-        throw new Error(`Error generating content: ${error.message}`);
+        if (error.message.includes('API key not valid')) {
+            errorMessage = "Invalid API Key. Please ensure your API key is configured correctly in the environment variables.";
+        } else if (error.message.match(/rate limit/i)) {
+            errorMessage = "You've made too many requests recently. Please wait a moment before trying again.";
+        } else {
+            errorMessage = `Error generating content: ${error.message}`;
+        }
     }
-    throw new Error("An unexpected error occurred while calling the Gemini API.");
+    throw new Error(errorMessage);
   }
 };

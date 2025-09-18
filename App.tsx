@@ -5,7 +5,7 @@ import { PromptForm } from './components/PromptForm';
 import { ResponseDisplay } from './components/ResponseDisplay';
 import { Loader } from './components/Loader';
 import { ErrorDisplay } from './components/ErrorDisplay';
-import { generateText } from './services/geminiService';
+import { generateTextStream } from './services/geminiService';
 import { SystemPrompt } from './components/SystemPrompt';
 import { PromptTemplates } from './components/PromptTemplates';
 
@@ -30,8 +30,13 @@ const App: React.FC = () => {
     setResponse('');
 
     try {
-      const result = await generateText(prompt, systemPrompt);
-      setResponse(result);
+      await generateTextStream(
+        prompt,
+        (chunk) => {
+          setResponse((prevResponse) => prevResponse + chunk);
+        },
+        systemPrompt
+      );
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -69,10 +74,10 @@ const App: React.FC = () => {
             isLoading={isLoading}
           />
 
-          <div className="mt-8 min-h-[200px] flex items-center justify-center">
-            {isLoading && <Loader />}
-            {error && <ErrorDisplay message={error} />}
-            {response && !isLoading && <ResponseDisplay response={response} />}
+          <div className="mt-8 min-h-[200px] flex flex-col items-center justify-center w-full gap-4">
+            {isLoading && !response && <Loader />}
+            {error && <ErrorDisplay message={error} onRetry={handleGenerate} />}
+            {response && !error && <ResponseDisplay response={response} isLoading={isLoading} />}
           </div>
         </main>
         
