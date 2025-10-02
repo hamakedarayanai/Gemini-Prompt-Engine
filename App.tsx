@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { PromptForm } from './components/PromptForm';
@@ -8,6 +7,8 @@ import { ErrorDisplay } from './components/ErrorDisplay';
 import { generateTextStream } from './services/geminiService';
 import { SystemPrompt } from './components/SystemPrompt';
 import { PromptTemplates } from './components/PromptTemplates';
+import { Configuration } from './components/Configuration';
+import { EmptyState } from './components/EmptyState';
 
 const App: React.FC = () => {
   const [prompt, setPrompt] = useState<string>('');
@@ -58,15 +59,18 @@ const App: React.FC = () => {
         <Header />
         
         <main className="mt-8">
-           <PromptTemplates
-             onSelectTemplate={handleSelectTemplate}
-             isLoading={isLoading}
-           />
-           <SystemPrompt
-            systemPrompt={systemPrompt}
-            setSystemPrompt={setSystemPrompt}
-            isLoading={isLoading}
-          />
+           <Configuration isSystemPromptSet={!!systemPrompt.trim()}>
+             <PromptTemplates
+               onSelectTemplate={handleSelectTemplate}
+               isLoading={isLoading}
+             />
+             <SystemPrompt
+              systemPrompt={systemPrompt}
+              setSystemPrompt={setSystemPrompt}
+              isLoading={isLoading}
+            />
+           </Configuration>
+
           <PromptForm
             prompt={prompt}
             setPrompt={setPrompt}
@@ -74,15 +78,16 @@ const App: React.FC = () => {
             isLoading={isLoading}
           />
 
-          <div className="mt-8 min-h-[200px] flex flex-col items-center justify-center w-full gap-4">
+          <div className="mt-8 min-h-[200px] w-full">
             {isLoading && !response && <Loader />}
             {error && <ErrorDisplay message={error} onRetry={handleGenerate} />}
+            {!isLoading && !error && !response && <EmptyState />}
             {response && !error && <ResponseDisplay response={response} isLoading={isLoading} />}
           </div>
         </main>
         
         <footer className="text-center mt-16 text-gray-500 text-sm">
-          <p>Powered by Gemini. Built by a World-Class Senior Frontend React Engineer.</p>
+          <p>Powered by Gemini. Built by a World-Class Senior Frontend Engineer.</p>
         </footer>
       </div>
     </div>

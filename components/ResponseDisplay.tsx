@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { marked } from 'marked';
 
 // TypeScript declaration for the global hljs object from highlight.js
@@ -52,11 +52,48 @@ const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
 export const ResponseDisplay: React.FC<ResponseDisplayProps> = ({ response, isLoading }) => {
   const [copied, setCopied] = useState(false);
   const [viewMode, setViewMode] = useState<'preview' | 'raw'>('preview');
+  const responseRef = useRef<HTMLDivElement>(null);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(response);
     setCopied(true);
   };
+  
+  useEffect(() => {
+    if (responseRef.current && viewMode === 'preview') {
+      const codeBlocks = responseRef.current.querySelectorAll('pre');
+      codeBlocks.forEach(block => {
+        if (block.querySelector('.code-block-header')) return; // Avoid duplicates
+
+        const codeEl = block.querySelector('code');
+        const codeText = codeEl ? codeEl.innerText : '';
+        const lang = codeEl?.className.match(/language-(\w+)/)?.[1] || 'code';
+
+        const header = document.createElement('div');
+        header.className = 'code-block-header';
+        
+        const langName = document.createElement('span');
+        langName.innerText = lang;
+        langName.className = 'code-lang-name';
+        
+        const button = document.createElement('button');
+        button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a2.25 2.25 0 0 1-2.25 2.25H9a2.25 2.25 0 0 1-2.25-2.25v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" /></svg> Copy`;
+        button.className = 'copy-code-btn';
+
+        button.onclick = () => {
+          navigator.clipboard.writeText(codeText);
+          button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1 text-green-400"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg> Copied!`;
+          setTimeout(() => {
+            button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a2.25 2.25 0 0 1-2.25 2.25H9a2.25 2.25 0 0 1-2.25-2.25v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" /></svg> Copy`;
+          }, 2000);
+        };
+        
+        header.appendChild(langName);
+        header.appendChild(button);
+        block.prepend(header);
+      });
+    }
+  }, [response, viewMode]);
 
   useEffect(() => {
     if (copied) {
@@ -68,7 +105,7 @@ export const ResponseDisplay: React.FC<ResponseDisplayProps> = ({ response, isLo
   const parsedHtml = marked.parse(response) as string;
   
   return (
-    <div className="w-full bg-gray-800 border border-gray-700 rounded-lg p-6 relative shadow-lg animate-fade-in">
+    <div className="w-full bg-gray-800 border border-gray-700 rounded-xl p-6 relative shadow-lg animate-fade-in">
       <div className="absolute top-3 right-3 flex items-center gap-2">
         <div className="flex items-center rounded-md bg-gray-700/50 p-1 text-sm font-medium">
           <button
@@ -108,6 +145,7 @@ export const ResponseDisplay: React.FC<ResponseDisplayProps> = ({ response, isLo
       
       {viewMode === 'preview' ? (
         <div 
+          ref={responseRef}
           className="prose prose-invert max-w-none text-gray-300"
           dangerouslySetInnerHTML={{ __html: parsedHtml + (isLoading ? '<span class="typing-cursor"></span>' : '') }}
         />
@@ -145,21 +183,74 @@ style.innerHTML = `
     from, to { background-color: transparent; }
     50% { background-color: #c084fc; } /* Tailwind purple-400 */
   }
-  /* Improve prose styles for code blocks to match atom-one-dark */
-  .prose code {
-    background-color: #2c313a !important;
-    padding: 0.2em 0.4em;
-    margin: 0;
-    font-size: 85%;
-    border-radius: 6px;
+
+  /* Improved Prose Styles */
+  .prose {
+      line-height: 1.7;
   }
+  .prose h1, .prose h2, .prose h3 {
+      font-weight: 700;
+  }
+  .prose a {
+      color: #a78bfa; /* Tailwind violet-400 */
+      text-decoration: none;
+      transition: color 0.2s;
+  }
+  .prose a:hover {
+      color: #c4b5fd; /* Tailwind violet-300 */
+      text-decoration: underline;
+  }
+  .prose blockquote {
+      border-left-color: #6d28d9; /* Tailwind violet-700 */
+      font-style: normal;
+  }
+
+  /* Atom One Dark Theme for code blocks */
   .prose pre {
+    position: relative;
     background-color: #282c34 !important;
     border: 1px solid #4b5563; /* Tailwind gray-600 */
+    border-radius: 0.5rem;
+    padding-top: 2.5rem !important; /* Make space for header */
   }
-  .prose pre code {
+  .prose pre code.hljs {
     background-color: transparent !important;
     padding: 0;
+  }
+  .code-block-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background-color: #353b45;
+    border-bottom: 1px solid #4b5563;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+  }
+  .code-lang-name {
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #9ca3af; /* Tailwind gray-400 */
+      text-transform: uppercase;
+  }
+  .copy-code-btn {
+    display: flex;
+    align-items: center;
+    background-color: #4b5563;
+    color: #d1d5db; /* Tailwind gray-300 */
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  .copy-code-btn:hover {
+    background-color: #6b7280; /* Tailwind gray-500 */
   }
 `;
 document.head.appendChild(style);

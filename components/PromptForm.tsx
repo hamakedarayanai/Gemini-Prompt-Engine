@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 
 interface PromptFormProps {
   prompt: string;
@@ -22,6 +21,15 @@ const ClearIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 
 export const PromptForm: React.FC<PromptFormProps> = ({ prompt, setPrompt, onSubmit, isLoading }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '0px';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      textareaRef.current.style.height = scrollHeight + 'px';
+    }
+  }, [prompt]);
   
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -33,11 +41,14 @@ export const PromptForm: React.FC<PromptFormProps> = ({ prompt, setPrompt, onSub
   return (
     <div className="relative">
       <textarea
+        ref={textareaRef}
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Enter your prompt here... e.g., 'Write a short story about a robot who discovers music.'"
-        className="w-full h-32 p-4 pr-[180px] rounded-lg bg-gray-800 border-2 border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none resize-none transition-colors duration-200 text-gray-200 placeholder-gray-500"
+        className="w-full p-4 pr-[180px] rounded-xl bg-gray-800 border-2 border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none resize-none transition-colors duration-200 text-gray-200 placeholder-gray-500"
+        style={{ minHeight: '80px', maxHeight: '400px' }}
+        rows={1}
         disabled={isLoading}
         aria-label="Prompt input"
       />
